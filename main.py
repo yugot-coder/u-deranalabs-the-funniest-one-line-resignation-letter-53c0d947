@@ -47,6 +47,23 @@ def validate_entry(text: str) -> None:
         raise ValueError("entry must be a single line")
 
 
+def verify_written_bytes(path: str, expected: str) -> str:
+    """Read ``path`` back and check it holds exactly ``expected``.
+
+    Returns the text read back. Raises ValueError when the file is
+    missing, unreadable, or differs from what was written, so a
+    truncated or corrupted write never ships silently.
+    """
+    with open(path, "r", encoding="utf-8") as handle:
+        written = handle.read()
+    if written != expected:
+        raise ValueError(
+            f"read-back verification failed for {path}: "
+            f"expected {expected!r}, found {written!r}"
+        )
+    return written
+
+
 def write_entry(text: str, path: str = ENTRY_PATH) -> str:
     """Write the entry to ``path`` and verify it by reading it back.
 
@@ -56,14 +73,7 @@ def write_entry(text: str, path: str = ENTRY_PATH) -> str:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(text)
-    with open(path, "r", encoding="utf-8") as handle:
-        written = handle.read()
-    if written != text:
-        raise ValueError(
-            f"read-back verification failed for {path}: "
-            f"expected {text!r}, found {written!r}"
-        )
-    return written
+    return verify_written_bytes(path, text)
 
 
 def main() -> None:
